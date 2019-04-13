@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">SoundLevelMeter</string>
+
+    <string name="cannot_use_record_audio">録音できません</string>
+</resources>
