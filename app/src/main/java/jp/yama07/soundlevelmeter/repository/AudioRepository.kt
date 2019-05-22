@@ -26,7 +26,7 @@ class AudioRepository(
 
   init {
     val audioBufferSizeInByte =
-      android.media.AudioRecord.getMinBufferSize(samplingRate, channelConfig, audioFormat)
+      AudioRecord.getMinBufferSize(samplingRate, channelConfig, audioFormat)
     val audioBufferSizeInShort = audioBufferSizeInByte / 2
 
     audioRecord = AudioRecord(
