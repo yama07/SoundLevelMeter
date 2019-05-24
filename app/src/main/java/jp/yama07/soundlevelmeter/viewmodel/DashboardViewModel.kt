@@ -27,15 +27,16 @@ class DashboardViewModel(
   }
   val frame: LiveData<Short> = _frame
 
-  fun start() {
+  fun startRecording() {
     audioRepository.startRecording()
   }
 
-  fun stop() {
+  fun stopRecording() {
     audioRepository.stopRecording()
   }
 
-  fun release() {
+  override fun onCleared() {
+    super.onCleared()
     audioRepository.release()
   }
 }

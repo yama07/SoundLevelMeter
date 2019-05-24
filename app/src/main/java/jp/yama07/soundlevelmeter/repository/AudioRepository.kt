@@ -19,12 +19,16 @@ class AudioRepository(
     const val DEFAULT_AUDIO_FORMAT: Int = AudioFormat.ENCODING_PCM_16BIT
   }
 
-  private val audioRecord: AudioRecord
+  private lateinit var audioRecord: AudioRecord
 
   private val _frames = MutableLiveData<ShortArray>()
   val frames: LiveData<ShortArray> = _frames
 
   init {
+    setupAudioRecord()
+  }
+
+  private fun setupAudioRecord() {
     val audioBufferSizeInByte =
       AudioRecord.getMinBufferSize(samplingRate, channelConfig, audioFormat)
     val audioBufferSizeInShort = audioBufferSizeInByte / 2
@@ -54,6 +58,11 @@ class AudioRepository(
   }
 
   fun startRecording() {
+    if (audioRecord.state == AudioRecord.STATE_UNINITIALIZED) {
+      audioRecord.release()
+      setupAudioRecord()
+    }
+
     if (audioRecord.recordingState == AudioRecord.RECORDSTATE_STOPPED) {
       Timber.d("startRecording")
       audioRecord.startRecording()

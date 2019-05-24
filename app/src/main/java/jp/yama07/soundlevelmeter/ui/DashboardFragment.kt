@@ -48,25 +48,32 @@ class DashboardFragment : Fragment() {
       it.handler = View.OnClickListener {
         startRecordWithPermissionCheck()
       }
-      it.linechart.also { chart ->
-        chart.setTouchEnabled(true)
-        chart.isDragEnabled = false
-        chart.setScaleEnabled(false)
-        chart.setDrawGridBackground(false)
-        chart.setPinchZoom(false)
-        chart.setBackgroundColor(Color.argb(0, 0, 0, 0))
-        chart.data = chartData
-        chart.axisLeft.also { leftAxis ->
-          leftAxis.textColor = Color.WHITE
-          leftAxis.axisMaximum = 5000f
-          leftAxis.axisMinimum = -5000f
-          leftAxis.setDrawGridLines(true)
-        }
-        chart.description.isEnabled = false
-        chart.axisRight.isEnabled = false
-        chart.xAxis.isEnabled = false
-        chart.legend.isEnabled = false
+    }
+    setupChart()
+    subscribe()
+
+    return binding.root
+  }
+
+  private fun setupChart() {
+    binding.linechart.also {
+      it.setTouchEnabled(true)
+      it.isDragEnabled = false
+      it.setScaleEnabled(false)
+      it.setDrawGridBackground(false)
+      it.setPinchZoom(false)
+      it.setBackgroundColor(Color.argb(0, 0, 0, 0))
+      it.data = chartData
+      it.axisLeft.also { leftAxis ->
+        leftAxis.textColor = Color.WHITE
+        leftAxis.axisMaximum = 5000f
+        leftAxis.axisMinimum = -5000f
+        leftAxis.setDrawGridLines(true)
       }
+      it.description.isEnabled = false
+      it.axisRight.isEnabled = false
+      it.xAxis.isEnabled = false
+      it.legend.isEnabled = false
     }
     chartData.addDataSet(LineDataSet(null, "Microphone").also { set ->
       set.mode = LineDataSet.Mode.CUBIC_BEZIER
@@ -77,10 +84,6 @@ class DashboardFragment : Fragment() {
       set.lineWidth = 2f
       set.setDrawValues(false)
     })
-
-    subscribe()
-
-    return binding.root
   }
 
   private fun subscribe() {
@@ -120,12 +123,12 @@ class DashboardFragment : Fragment() {
 
   @NeedsPermission(Manifest.permission.RECORD_AUDIO)
   fun startRecord() {
-    vm.start()
+    vm.startRecording()
   }
 
   @NeedsPermission(Manifest.permission.RECORD_AUDIO)
   fun stopRecord() {
-    vm.stop()
+    vm.stopRecording()
   }
 
   @OnPermissionDenied(Manifest.permission.RECORD_AUDIO)
