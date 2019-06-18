@@ -2,9 +2,10 @@ package jp.yama07.soundlevelmeter.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import jp.yama07.soundlevelmeter.repository.AudioRepository
+import java.util.*
+import kotlin.math.abs
 import kotlin.math.log10
 
 class DashboardViewModel(
@@ -12,15 +13,34 @@ class DashboardViewModel(
 ) : ViewModel() {
 
   companion object {
-    private const val BASE_VOLUME: Double = 12.0
+    private const val BASE_VOLUME: Double = 125.0
+    private const val VOLUME_FRAME_RATE: Long = 10L
+    private const val VOLUME_FRAME_RATE_WINDOW: Int = 8
   }
 
-  val volume: LiveData<Double> = Transformations.map(audioRepository.frames) { f ->
-    val max = f.max() ?: 0
-    return@map 20.0 * log10(max.toDouble() / BASE_VOLUME)
-  }
+  private var lastTimestamp: Long = 0L
+  private var volumeBuff = ArrayDeque<Double>()
+  val volume: LiveData<Double> = MediatorLiveData<Double>().also { mediator ->
+    val periodInMillis: Long = 1000 / VOLUME_FRAME_RATE
 
-  val prettyVolume: LiveData<String> = Transformations.map(volume) { v -> "%.0f dB".format(v) }
+    mediator.addSource((audioRepository.frames)) { f ->
+      val timestamp = System.currentTimeMillis()
+
+      val max = f.map { abs(it.toDouble()) }.max() ?: 0.0
+      val volume = 20.0 * log10(max / BASE_VOLUME)
+
+      volumeBuff.push(volume)
+      while (volumeBuff.size > VOLUME_FRAME_RATE_WINDOW) {
+        volumeBuff.removeLast()
+      }
+
+      if ((timestamp - lastTimestamp) >= periodInMillis) {
+        val avg = volumeBuff.average()
+        mediator.postValue(avg)
+        lastTimestamp = timestamp
+      }
+    }
+  }
 
   private val _frame = MediatorLiveData<Short>().also {
     it.addSource(audioRepository.frames) { f -> f.forEach { v -> it.postValue(v) } }

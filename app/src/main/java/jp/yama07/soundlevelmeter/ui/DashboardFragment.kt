@@ -57,7 +57,7 @@ class DashboardFragment : Fragment() {
 
   private fun setupChart() {
     binding.linechart.also {
-      it.setTouchEnabled(true)
+      it.setTouchEnabled(false)
       it.isDragEnabled = false
       it.setScaleEnabled(false)
       it.setDrawGridBackground(false)

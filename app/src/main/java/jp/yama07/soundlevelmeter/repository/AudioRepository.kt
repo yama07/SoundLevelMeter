@@ -6,6 +6,7 @@ import android.media.MediaRecorder
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import timber.log.Timber
+import kotlin.properties.Delegates
 
 class AudioRepository(
   val samplingRate: Int = DEFAULT_SAMPLING_RATE,
@@ -20,6 +21,9 @@ class AudioRepository(
   }
 
   private lateinit var audioRecord: AudioRecord
+  private var audioBufferSizeInByte: Int by Delegates.notNull()
+  private var audioBufferSizeInShort: Int by Delegates.notNull()
+
 
   private val _frames = MutableLiveData<ShortArray>()
   val frames: LiveData<ShortArray> = _frames
@@ -29,9 +33,8 @@ class AudioRepository(
   }
 
   private fun setupAudioRecord() {
-    val audioBufferSizeInByte =
-      AudioRecord.getMinBufferSize(samplingRate, channelConfig, audioFormat)
-    val audioBufferSizeInShort = audioBufferSizeInByte / 2
+    audioBufferSizeInByte = AudioRecord.getMinBufferSize(samplingRate, channelConfig, audioFormat)
+    audioBufferSizeInShort = audioBufferSizeInByte / 2
 
     audioRecord = AudioRecord(
       MediaRecorder.AudioSource.MIC,
@@ -47,8 +50,7 @@ class AudioRepository(
       AudioRecord.OnRecordPositionUpdateListener {
 
       override fun onPeriodicNotification(recorder: AudioRecord) {
-        val audioDataArray = ShortArray(audioBufferSizeInShort)
-        recorder.read(audioDataArray, 0, audioBufferSizeInShort)
+        val audioDataArray = readAudioData(recorder)
         Timber.d("ReadSize: ${audioDataArray.size}")
         _frames.postValue(audioDataArray)
       }
@@ -57,27 +59,34 @@ class AudioRepository(
     })
   }
 
+  private fun readAudioData(record: AudioRecord = audioRecord) = ShortArray(audioBufferSizeInShort).also {
+    record.read(it, 0, audioBufferSizeInShort)
+  }
+
+  private fun flushAudioData(record: AudioRecord = audioRecord) {
+    readAudioData(record)
+  }
+
   fun startRecording() {
     if (audioRecord.state == AudioRecord.STATE_UNINITIALIZED) {
       audioRecord.release()
       setupAudioRecord()
     }
 
-    if (audioRecord.recordingState == AudioRecord.RECORDSTATE_STOPPED) {
-      Timber.d("startRecording")
-      audioRecord.startRecording()
-    }
+    Timber.d("Start recording")
+    audioRecord.startRecording()
   }
 
   fun stopRecording() {
-    if (audioRecord.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-      Timber.d("stopRecording")
-      audioRecord.stop()
-    }
+    Timber.d("Stop recording")
+    audioRecord.stop()
+    Timber.d("Flush audio data")
+    flushAudioData()
   }
 
   fun release() {
-    stopRecording()
+    audioRecord.stop()
+    Timber.d("Release record")
     audioRecord.release()
   }
 
